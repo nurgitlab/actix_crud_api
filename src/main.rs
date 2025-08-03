@@ -1,17 +1,34 @@
 use axum::{
-    extract::{Path, Query}, response::IntoResponse, routing::{get, get_service}, Router
+    extract::{Path, Query}, 
+    middleware::{map_response}, 
+    response::{IntoResponse, Response}, routing::get, Router
 };
 use tower_http::services::ServeDir;
+
+mod error;
+pub use self::error::{Error, Result};
+
+mod web;
 
 #[tokio::main]
 async fn main() {
     let routes_all = Router::new()
     .merge(routes_hello())
+    .merge(web::routes_login::routes())
+    .layer(map_response(main_response_mapper))
 	.fallback_service(routes_static());
 
     // run our app with hyper, listening globally on port 3010
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3010").await.unwrap();
     axum::serve(listener, routes_all).await.unwrap();
+}
+
+async fn main_response_mapper(res: Response) -> Response {
+    println!("->> {:<12} - main_response_mapper", "RES_MAPPER");
+
+    println!();
+
+    res
 }
 
 fn routes_static() -> Router {
