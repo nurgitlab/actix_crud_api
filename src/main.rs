@@ -3,6 +3,7 @@ use axum::{
     middleware::{map_response}, 
     response::{IntoResponse, Response}, routing::get, Router
 };
+use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 
 mod error;
@@ -16,6 +17,7 @@ async fn main() {
     .merge(routes_hello())
     .merge(web::routes_login::routes())
     .layer(map_response(main_response_mapper))
+    .layer(CookieManagerLayer::new())
 	.fallback_service(routes_static());
 
     // run our app with hyper, listening globally on port 3010
