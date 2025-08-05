@@ -1,4 +1,7 @@
 mod api;
+mod migrations;
+
+use std::env;
 
 use api::task::{
     get_task
@@ -9,6 +12,7 @@ use actix_web::{
 };
 use log::logger;
 
+use sqlx::postgres::PgPoolOptions;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()>{
@@ -18,10 +22,27 @@ async fn main() -> std::io::Result<()>{
     }
     env_logger::init();
 
+    dotenv::dotenv().ok();
+    
+    // Создаем пул соединений с БД
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    println!("database_url: {}", database_url);
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await
+        .expect("Failed to create pool");
+
+    migrations::apply_migrations(&pool)
+        .await
+        .expect("Failed to apply migrations");
+
     HttpServer::new(move || {
         let logger =  Logger::default();
         App::new()
         .wrap(logger)
+        .app_data(Data::new(pool.clone()))
         .service(get_task)
     })
     .bind(("127.0.0.1", 3030))?
