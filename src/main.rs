@@ -12,7 +12,7 @@ use log::logger;
 
 use sqlx::postgres::PgPoolOptions;
 
-use crate::handlers::{ping_pong_handler::get_ping_pong, user_handler::create_user};
+use crate::{handlers::{ping_pong_handler::get_ping_pong, user_handler::{create_user, get_user}}, migrations::apply_migrations::apply_migrations};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()>{
@@ -34,7 +34,7 @@ async fn main() -> std::io::Result<()>{
         .await
         .expect("Failed to create pool");
 
-    migrations::apply_migrations(&pool)
+    apply_migrations(&pool)
         .await
         .expect("Failed to apply migrations");
 
@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()>{
         .wrap(logger)
         .app_data(Data::new(pool.clone()))
         .service(get_ping_pong)
-        .service(create_user)
+        .configure(handlers::user_handler::users_routes)
     })
     .bind(("127.0.0.1", 3030))?
     .run()

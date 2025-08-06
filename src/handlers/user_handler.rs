@@ -1,24 +1,8 @@
 use actix_web::{
-    error::ResponseError, get, http::{header::ContentType, StatusCode}, post, put, web::{Data, Json, Path}, HttpResponse, Responder, Result
+    delete, error::ResponseError, get, http::{header::ContentType, StatusCode}, post, put, web::{Data, Json, Path, ServiceConfig}, HttpResponse, Responder, Result
 };use crate::{models::user_models::{CreateUser, UpdateUser, User, UserPath}, repositories::user_repository::UserRepository};
 use sqlx::PgPool;
 
-// async fn get_user(
-//     pool: Data<PgPool>,
-//     path: Path<UserPath>,
-// ) -> impl Responder {
-//     match UserRepository::find_by_id(&pool, path.user_id).await {
-//         Ok(Some(user)) => HttpResponse::Ok().json(User {
-//             id: user.id,
-//             username: user.username,
-//         }),
-//         Ok(None) => HttpResponse::NotFound().finish(),
-//         Err(e) => {
-//             log::error!("Failed to fetch user: {}", e);
-//             HttpResponse::InternalServerError().finish()
-//         }
-//     }
-// }
 
 #[post("/users")]
 pub async fn create_user(
@@ -32,4 +16,61 @@ pub async fn create_user(
             HttpResponse::InternalServerError().finish()
         }
     }
+}
+
+#[get("/users/{user_id}")]
+async fn get_user(
+    pool: Data<PgPool>,
+    path: Path<UserPath>,
+) -> impl Responder {
+    match UserRepository::find_by_id(&pool, path.user_id).await {
+        Ok(Some(user)) => HttpResponse::Ok().json(User {
+            id: user.id,
+            username: user.username,
+        }),
+        Ok(None) => HttpResponse::NotFound().finish(),
+        Err(e) => {
+            log::error!("Failed to fetch user: {}", e);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+#[put("/users/{user_id}")]
+async fn update_user(
+    pool: Data<PgPool>,
+    path: Path<UserPath>,
+    user_data: Json<UpdateUser>,
+) -> impl Responder {
+    match UserRepository::update(&pool, path.user_id, user_data.into_inner()).await {
+        Ok(user) => HttpResponse::Ok().json(User {
+            id: user.id,
+            username: user.username,
+        }),
+        Err(e) => {
+            log::error!("Failed to update user: {}", e);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+#[delete("/users/{user_id}")]
+async fn delete_user(
+    pool: Data<PgPool>,
+    path: Path<UserPath>,
+) -> impl Responder {
+    match UserRepository::delete(&pool, path.user_id).await {
+        Ok(_) => HttpResponse::NoContent().finish(),
+        Err(e) => {
+            log::error!("Failed to delete user: {}", e);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+pub fn users_routes(cfg: &mut ServiceConfig) {
+    cfg.service(create_user)
+       .service(get_user)
+       .service(update_user)
+       .service(delete_user);
 }
