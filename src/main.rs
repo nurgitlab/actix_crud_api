@@ -1,11 +1,9 @@
-mod api;
 mod migrations;
+mod handlers;
+mod models;
+mod repositories;
 
 use std::env;
-
-use api::task::{
-    get_task
-};
 
 use actix_web::{
     HttpServer, App, web::Data, middleware::Logger
@@ -13,6 +11,8 @@ use actix_web::{
 use log::logger;
 
 use sqlx::postgres::PgPoolOptions;
+
+use crate::handlers::{ping_pong_handler::get_ping_pong, user_handler::create_user};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()>{
@@ -43,7 +43,8 @@ async fn main() -> std::io::Result<()>{
         App::new()
         .wrap(logger)
         .app_data(Data::new(pool.clone()))
-        .service(get_task)
+        .service(get_ping_pong)
+        .service(create_user)
     })
     .bind(("127.0.0.1", 3030))?
     .run()
