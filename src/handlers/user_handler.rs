@@ -1,6 +1,9 @@
 use actix_web::{
     delete, error::ResponseError, get, http::{header::ContentType, StatusCode}, post, put, web::{Data, Json, Path, ServiceConfig}, HttpResponse, Responder, Result
-};use crate::{models::user_models::{CreateUser, UpdateUser, User, UserPath}, repositories::user_repository::UserRepository};
+};
+use serde::Deserialize;
+use validator::{HasLen, Validate};
+use crate::{errors::UserError, models::user_models::{CreateUser, UpdateUser, User, UserPath}, repositories::user_repository::UserRepository};
 use sqlx::PgPool;
 
 
@@ -19,21 +22,15 @@ pub async fn create_user(
 }
 
 #[get("/users/{user_id}")]
-async fn get_user(
+pub async fn get_user(
+    user_id: Path<String>,
     pool: Data<PgPool>,
-    path: Path<UserPath>,
-) -> impl Responder {
-    match UserRepository::find_by_id(&pool, path.user_id).await {
-        Ok(Some(user)) => HttpResponse::Ok().json(User {
-            id: user.id,
-            username: user.username,
-        }),
-        Ok(None) => HttpResponse::NotFound().finish(),
-        Err(e) => {
-            log::error!("Failed to fetch user: {}", e);
-            HttpResponse::InternalServerError().finish()
-        }
-    }
+) -> Result<HttpResponse, UserError> {
+    let user_id = user_id.parse::<i32>().map_err(|_| UserError::InvalidInput)?;
+    
+    let user = UserRepository::find_by_id(&pool, user_id).await?;
+    
+    Ok(HttpResponse::Ok().json(user))
 }
 
 #[put("/users/{user_id}")]

@@ -2,7 +2,7 @@ mod migrations;
 mod handlers;
 mod models;
 mod repositories;
-
+mod errors;
 use std::env;
 
 use actix_web::{

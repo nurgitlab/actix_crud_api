@@ -7,6 +7,7 @@ edition = "2024"
 actix-web = "4"
 uuid = {version = "1.17.0", features = ["v4"]}
 serde = {version = "1", features = ["derive"]}
+serde_json = { version = "1.0"}
 
 env_logger = "0.11.8"
 log = "0.4"
@@ -20,3 +21,5 @@ sqlx = { version = "0.8.0", features = ["postgres", "runtime-tokio-native-tls"] 
 tokio = { version = "1.0", features = ["full"] }
 
 anyhow = "1.0"
+
+validator = { version = "0.16.1", features = ["derive"] }
