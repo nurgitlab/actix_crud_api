@@ -8,11 +8,10 @@ use std::env;
 use actix_web::{
     HttpServer, App, web::Data, middleware::Logger
 };
-use log::logger;
 
 use sqlx::postgres::PgPoolOptions;
 
-use crate::{handlers::{ping_pong_handler::get_ping_pong, user_handler::{create_user, get_user}}, migrations::apply_migrations::apply_migrations};
+use crate::{handlers::{ping_pong_handler::get_ping_pong}, migrations::apply_migrations::apply_migrations};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()>{

@@ -1,3 +1,4 @@
+use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
@@ -8,18 +9,20 @@ pub struct User {
     pub username: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate, Display)]
 pub struct CreateUser {
+    #[validate(length(min = 3, max = 25, message = "Username must be between 3 and 25 chars"))]
     pub username: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate, Display)]
 pub struct UpdateUser {
-    pub username: Option<String>,
+    #[validate(length(min = 3, max = 25, message = "Username must be between 3 and 25 chars"))]
+    pub username: String,
 }
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct UserPath {
-    #[validate(range(min = 1, max = 10000, message = "User ID must be between 1 and 10000"))]
+    #[validate(range(min = 1, message = "User ID must be positive"))]
     pub user_id: i32,
 }

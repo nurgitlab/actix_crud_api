@@ -200,6 +200,7 @@ dependencies = [
  "sqlx",
  "strum",
  "strum_macros",
+ "thiserror",
  "tokio",
  "uuid",
  "validator",

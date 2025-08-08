@@ -5,10 +5,10 @@ use anyhow::Result;
 pub struct UserRepository;
 
 impl UserRepository {
-    pub async fn create(pool: &PgPool, user_data: CreateUser) -> Result<User> {
-         //TODO Need to create validation before INSERT in DB
+    pub async fn create(pool: &PgPool, user_data: CreateUser) -> Result<User, UserError> {
+         //TODO Need to create validation before INSERT in DB (because PSQL creating index in both cases)
 
-        let user = sqlx::query_as!(
+        let result = sqlx::query_as!(
             User,
             r#"
             INSERT INTO users (username)
@@ -17,90 +17,97 @@ impl UserRepository {
             "#,
             user_data.username,
         )
-        .fetch_one(pool)
-        .await?;
+        .fetch_optional(pool)
+        .await;
 
-        Ok(user)
+        match result {
+            Ok(Some(user)) => {
+                log::info!("User {} successfully created '{}'", user.id, user.username);
+                Ok(user)
+            },
+            Ok(None) => {
+                log::error!("User {} disappeared during creating", user_data.username);
+                Err(UserError::NotFound)
+            },
+            Err(e) => {
+                log::error!("Database error when creating user {}: {}", user_data.username, e);
+                Err(UserError::Database(e))
+            }
+        }
     }
 
     pub async fn find_by_id(pool: &PgPool, user_id: i32) -> Result<User, UserError> {
-        let user = sqlx::query_as!(
+        let result = sqlx::query_as!(
             User,
             "SELECT id, username FROM users WHERE id = $1",
             user_id
         )
         .fetch_optional(pool)
-        .await
-        .map_err(|e| {
-            log::error!("Database error when fetching user {}: {}", user_id, e);
-            UserError::DatabaseError(format!("Failed to fetch user {}", user_id))
-        })?;
-        
-        user.ok_or_else(|| {
-            log::info!("User {} not found", user_id);
-            UserError::UserNotFound
-        })
+        .await;
+
+        match result {
+            Ok(Some(user)) => {
+                log::info!("User {} successfully finded '{}'", user_id, user.username);
+                Ok(user)
+            },
+            Ok(None) => {
+                log::error!("User {} disappeared during finding", user_id);
+                Err(UserError::NotFound)
+            },
+            Err(e) => {
+                log::error!("Database error when finding user {}: {}", user_id, e);
+                Err(UserError::Database(e))
+            }
+        }
     }
 
-    pub async fn update(pool: &PgPool, user_id: i32, user_data: UpdateUser) -> Result<User> {
-        // let mut user = UserRepository::find_by_id(pool, user_id)
-        //     .await?
-        //     .ok_or(UserError::UserNotFound)?;
+    pub async fn update(pool: &PgPool, user_id: i32, user_data: UpdateUser) -> Result<User, UserError> {
+        UserRepository::find_by_id(pool, user_id).await?;
 
-        // if let Some(username) = user_data.username {
-        //     user.username = username;
-        // }
-
-        let updated_user = sqlx::query_as!(
+        let result = sqlx::query_as!(
             User,
-            r#"
-            UPDATE users
-            SET 
-                username = $1
-            WHERE id = $2
-            RETURNING id, username
-            "#,
+            "UPDATE users SET username = $1 WHERE id = $2 RETURNING id, username",
             user_data.username,
             user_id
         )
-        .fetch_one(pool)
-        .await?;
+        .fetch_optional(pool)
+        .await;
 
-        Ok(updated_user)
+        match result {
+            Ok(Some(user)) => {
+                log::info!("User {} successfully updated with username '{}'", user_id, user.username);
+                Ok(user)
+            },
+            Ok(None) => {
+                log::error!("User {} disappeared during update", user_id);
+                Err(UserError::NotFound)
+            },
+            Err(e) => {
+                log::error!("Database error when updating user {}: {}", user_id, e);
+                Err(UserError::Database(e))
+            }
+        }
     }
 
-    pub async fn delete(pool: &PgPool, user_id: i32) -> Result<()> {
-            // Сначала проверяем существование пользователя
-        let exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"
-        )
-        .bind(user_id)
-        .fetch_one(pool)
-        .await?;
+    pub async fn delete(pool: &PgPool, user_id: i32) -> Result<(), UserError> {
+        UserRepository::find_by_id(pool, user_id).await?;
 
-        if !exists {
-            return Err(anyhow::anyhow!("User with id {} not found", user_id));
-        }
-
-        // Если пользователь существует, выполняем удаление
-        let rows_affected = sqlx::query!(
+        let result = sqlx::query!(
             "DELETE FROM users WHERE id = $1",
             user_id
         )
         .execute(pool)
-        .await?
-        .rows_affected();
+        .await;
 
-        // Дополнительная проверка (на случай race condition)
-        if rows_affected == 0 {
-            Err(anyhow::anyhow!("User with id {} was not deleted", user_id))
-        } else {
-            Ok(())
+        match result {
+            Err(e) => {
+                log::error!("Database error when deleting user {}: {}", user_id, e);
+                Err(UserError::Database(e))
+            },
+            _ => {
+                log::info!("User {} updated", user_id);
+                Ok(())
+            }
         }
     }
-}
-
-fn hash_password(password: &str) -> Result<String> {
-    // В реальном приложении используйте argon2 или bcrypt
-    Ok(password.to_string()) // Замените на реальное хэширование
 }
