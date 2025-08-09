@@ -1,25 +1,24 @@
 use actix_web::{HttpResponse, ResponseError};
 use serde_json::json;
-use validator::ValidationErrors;
 use sqlx::Error as SqlxError;
 use thiserror::Error;
+use validator::ValidationErrors;
 
 #[derive(Debug, Error)]
 pub enum UserError {
     #[error("Validation error: {0}")]
     Validation(#[from] ValidationErrors),
-    
+
     #[error("Database error: {0}")]
     Database(#[from] SqlxError),
-    
+
     #[error("User not found")]
     NotFound,
-    
-    #[error("Conflict: {0}")]
-    Conflict(String),
-    
-    #[error("Unauthorized")]
-    Unauthorized,
+    // #[error("Conflict: {0}")]
+    // Conflict(String),
+
+    // #[error("Unauthorized")]
+    // Unauthorized,
 }
 
 impl ResponseError for UserError {
@@ -31,8 +30,12 @@ impl ResponseError for UserError {
                     .iter()
                     .flat_map(|(field, errors)| {
                         errors.iter().map(move |e| {
-                            log::error!("Validatotion error, user: {}", e);
-                            format!("{}: {}", field, e.message.as_deref().unwrap_or("invalid"))
+                            log::error!("Validatotion error, user: {e}");
+                            format!(
+                                "{}: {}",
+                                field,
+                                e.message.as_deref().unwrap_or("invalid")
+                            )
                         })
                     })
                     .collect();
@@ -42,29 +45,28 @@ impl ResponseError for UserError {
                     "details": details
                 }))
             }
-            
+
             UserError::Database(e) => {
-                log::error!("Database error: {}", e);
+                log::error!("Database error: {e}");
                 HttpResponse::InternalServerError().json(json!({
                     "error": "database_error",
                     "message": "Database operation failed"
                 }))
             }
-            
+
             UserError::NotFound => HttpResponse::NotFound().json(json!({
                 "error": "not_found",
                 "message": "User not found"
             })),
-            
-            UserError::Conflict(msg) => HttpResponse::Conflict().json(json!({
-                "error": "conflict",
-                "message": msg
-            })),
-            
-            UserError::Unauthorized => HttpResponse::Unauthorized().json(json!({
-                "error": "unauthorized",
-                "message": "Authentication required"
-            })),
+            // UserError::Conflict(msg) => HttpResponse::Conflict().json(json!({
+            //     "error": "conflict",
+            //     "message": msg
+            // })),
+
+            // UserError::Unauthorized => HttpResponse::Unauthorized().json(json!({
+            //     "error": "unauthorized",
+            //     "message": "Authentication required"
+            // })),
         }
     }
 }

@@ -24,3 +24,7 @@ anyhow = "1.0"
 
 validator = { version = "0.16.1", features = ["derive"] }
 thiserror = { version = "2.0.12"}
+
+[lints]
+clippy.all = "warn"
+clippy.pedantic = "warn" 

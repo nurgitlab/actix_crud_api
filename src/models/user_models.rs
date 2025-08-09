@@ -11,13 +11,21 @@ pub struct User {
 
 #[derive(Debug, Deserialize, Validate, Display)]
 pub struct CreateUser {
-    #[validate(length(min = 3, max = 25, message = "Username must be between 3 and 25 chars"))]
+    #[validate(length(
+        min = 3,
+        max = 25,
+        message = "Username must be between 3 and 25 chars"
+    ))]
     pub username: String,
 }
 
 #[derive(Debug, Deserialize, Validate, Display)]
 pub struct UpdateUser {
-    #[validate(length(min = 3, max = 25, message = "Username must be between 3 and 25 chars"))]
+    #[validate(length(
+        min = 3,
+        max = 25,
+        message = "Username must be between 3 and 25 chars"
+    ))]
     pub username: String,
 }
 
