@@ -1,8 +1,8 @@
-mod errors;
 mod handlers;
 mod migrations;
 mod models;
 mod repositories;
+mod erros;
 use std::env;
 
 use actix_web::{App, HttpServer, middleware::Logger, web::Data};
@@ -25,14 +25,11 @@ async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
 
     // Create DB pool
-    let user = env::var("DATABASE_USER").unwrap_or_else(|_| "postgres".to_string());
-    let password = env::var("DATABASE_PASSWORD").unwrap_or_else(|_| "".to_string());
-    let host = env::var("DATABASE_HOST").unwrap_or_else(|_| "localhost".to_string());
-    let port = env::var("DATABASE_PORT").unwrap_or_else(|_| "5432".to_string());
-    let name = env::var("DATABASE_NAME").unwrap_or_else(|_| "postgres".to_string());
-    let database_url = format!("postgres://{}:{}@{}:{}/{}", user, password, host, port, name);
+    let database_url =
+        env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     println!("database_url: {database_url}");
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
@@ -48,6 +45,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(pool.clone()))
             .service(get_ping_pong)
             .configure(handlers::user_handler::users_routes)
+            .configure(handlers::cookie_handler::cookie_routes)
     })
     .bind(("127.0.0.1", 3030))?
     .run()

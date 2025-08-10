@@ -1,7 +1,5 @@
 use crate::{
-    errors::UserError,
-    models::user_models::{CreateUser, UpdateUser, UserPath},
-    repositories::user_repository::UserRepository,
+    erros::user_errors::UserError, models::user_models::{CreateUser, UpdateUser, UserPath}, repositories::user_repository::UserRepository
 };
 use actix_web::{
     HttpResponse, Result, delete, get, post, put,
