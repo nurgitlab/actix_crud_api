@@ -1,10 +1,42 @@
-# Actix Crud Api
+# Actix CRUD API
+A high-performance CRUD API built with Rust using the Actix-Web framework and PostgreSQL. This API demonstrates how to implement basic CRUD operations following REST conventions.
 
-Education migrated fron Axum to Actix, because Axum 0.8 has very low-quality documentation
+## Features
+- Create, Read, Update, and Delete operations
+- PostgreSQL database integration
+- JSON request/response format
+- Error handling middleware
+- Added logging
+  
+## Features
+- PostgreSQL 12+
+- Cargo (Rust's package manager)
+  
+## Setup
+1. Configure database:
+   ```shell
+   DATABASE_URL=postgres://username:password@localhost:5432/db_name
+   ```
+2. Start the application:
+    ```shell 
+    cd src
+    ```
+    ```shell
+    cargo run
+    ```
 
-Rust tracing - HP used
-https://lpalmieri.com/posts/2020-09-27-zero-to-production-4-are-we-observable-yet/
+## Directory Structure
 
-
-cargo fmt - format code
-cargo clippy - check code
+```text
+.
+├── src/
+│   ├── main.rs             # Application entry point
+│   ├── handlers/           # Request handlers
+│   ├── migrations/         # Applying migrations
+│   ├── models/             # Data models
+│   ├── repositories/       # Database connection setup
+│   └── errors/             # Custom error handling
+├── migrations/             # Database migrations (SQL)
+├── .env                    # Environment variables
+├── Cargo.toml              # Project dependencies
+└── README.md               # Project documentation
